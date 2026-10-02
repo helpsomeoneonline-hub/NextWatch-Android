@@ -22,9 +22,9 @@ jobs:
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk NextWatch-v0.1.1-debug.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk NextWatch-v0.2.0-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: NextWatch-v0.1.1-debug
-          path: NextWatch-v0.1.1-debug.apk
+          name: NextWatch-v0.2.0-debug
+          path: NextWatch-v0.2.0-debug.apk
           retention-days: 30
