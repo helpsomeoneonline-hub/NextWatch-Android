@@ -4,9 +4,11 @@
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
         android:theme="@style/Theme.NextWatch"
+        android:icon="@drawable/ic_nextwatch"
         android:label="NextWatch"
         android:supportsRtl="true">
         <activity android:name=".TrailerActivity" />
+        <activity android:name=".DetailActivity" android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".MainActivity"
             android:screenOrientation="unspecified"
