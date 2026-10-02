@@ -8,7 +8,9 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.view.Gravity;
+import android.view.WindowInsets;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -92,6 +94,38 @@ public class MainActivity extends Activity {
         addNav(nav,"Taste","taste");
         root.addView(nav,new LinearLayout.LayoutParams(-1,dp(62)));
         setContentView(root);
+
+        // Android 15+ can lay apps edge-to-edge by default. Respect system bars
+        // so the bottom navigation never sits underneath Back/Home/Gesture controls.
+        root.setOnApplyWindowInsetsListener((v, insets) -> {
+            int left = 0;
+            int top = 0;
+            int right = 0;
+            int bottom = 0;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                android.graphics.Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                left = bars.left;
+                top = bars.top;
+                right = bars.right;
+                bottom = Math.max(bars.bottom, ime.bottom);
+            } else {
+                left = insets.getSystemWindowInsetLeft();
+                top = insets.getSystemWindowInsetTop();
+                right = insets.getSystemWindowInsetRight();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+
+            v.setPadding(
+                dp(14) + left,
+                dp(8) + top,
+                dp(14) + right,
+                dp(8) + bottom
+            );
+            return insets;
+        });
+        root.requestApplyInsets();
     }
 
     private void addNav(LinearLayout nav,String label,String tag) {
