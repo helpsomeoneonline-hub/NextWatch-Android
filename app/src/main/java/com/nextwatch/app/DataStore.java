@@ -29,6 +29,35 @@ public class DataStore {
         if (!prefs.contains(KEY_SCHEMA)) prefs.edit().putInt(KEY_SCHEMA, 1).apply();
     }
 
+    public void migrateDemoSeedIfUntouched() {
+        if (prefs.getBoolean("demo_seed_checked", false)) return;
+
+        Map<String, Integer> r = ratings();
+        Map<String, String> s = statuses();
+
+        boolean ratingsMatch =
+            r.size() == 4 &&
+            r.getOrDefault("Attack on Titan", 0) == 10 &&
+            r.getOrDefault("Solo Leveling", 0) == 10 &&
+            r.getOrDefault("Vinland Saga", 0) == 9 &&
+            r.getOrDefault("Jujutsu Kaisen", 0) == 9;
+
+        boolean statusesMatch =
+            s.size() == 5 &&
+            STATUS_WATCHED.equals(s.get("Attack on Titan")) &&
+            STATUS_WATCHED.equals(s.get("Solo Leveling")) &&
+            STATUS_WATCHED.equals(s.get("Vinland Saga")) &&
+            STATUS_WATCHED.equals(s.get("Jujutsu Kaisen")) &&
+            STATUS_WATCHLIST.equals(s.get("Frieren: Beyond Journey's End"));
+
+        SharedPreferences.Editor e = prefs.edit().putBoolean("demo_seed_checked", true);
+        if (ratingsMatch && statusesMatch) {
+            e.putString(KEY_RATINGS, "{}");
+            e.putString(KEY_STATUSES, "{}");
+        }
+        e.apply();
+    }
+
     public Map<String, Integer> ratings() {
         Map<String, Integer> result = new HashMap<>();
         try {
