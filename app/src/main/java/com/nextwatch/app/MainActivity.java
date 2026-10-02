@@ -13,6 +13,8 @@ import android.view.Gravity;
 import android.view.WindowInsets;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -56,20 +58,9 @@ public class MainActivity extends Activity {
         store = new DataStore(this);
         catalog = Catalog.items();
         engine = new RecommendationEngine(catalog, store);
-        seedStarterProfile();
+        store.migrateDemoSeedIfUntouched();
         buildShell();
         showHome();
-    }
-
-    private void seedStarterProfile() {
-        if (!store.ratings().isEmpty() || !store.statuses().isEmpty()) return;
-        String[] titles = {"Attack on Titan","Solo Leveling","Vinland Saga","Jujutsu Kaisen"};
-        int[] scores = {10,10,9,9};
-        for (int i=0;i<titles.length;i++) {
-            store.setRating(titles[i], scores[i]);
-            store.setStatus(titles[i], DataStore.STATUS_WATCHED);
-        }
-        store.setStatus("Frieren: Beyond Journey's End", DataStore.STATUS_WATCHLIST);
     }
 
     private void buildShell() {
@@ -204,7 +195,7 @@ public class MainActivity extends Activity {
         int score=engine.match(item,"");
         LinearLayout c=card();
         LinearLayout r=row();
-        r.addView(poster(item,106,158));
+        r.addView(poster(item,132,198));
         LinearLayout body=col();
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,-2,1f);
         lp.setMargins(dp(14),0,0,0);
@@ -238,7 +229,7 @@ public class MainActivity extends Activity {
         LinearLayout r=row();
         r.setPadding(dp(12),dp(12),dp(12),dp(12));
         r.setBackground(roundRect(PANEL,18));
-        r.addView(poster(item,66,94));
+        r.addView(poster(item,84,126));
         LinearLayout body=col();
         LinearLayout.LayoutParams blp=new LinearLayout.LayoutParams(0,-2,1f);
         blp.setMargins(dp(12),0,dp(8),0);
@@ -256,7 +247,7 @@ public class MainActivity extends Activity {
     private void showDiscover(String type,String query) {
         setActive("discover"); clearPage();
         page.addView(label("Discover",28,TEXT,true));
-        page.addView(label("Search the starter catalogue. Live catalogue APIs come next.",14,MUTED,false),block(4));
+        page.addView(label("Browse anime, series and movies with live artwork.",14,MUTED,false),block(4));
         EditText search=input("Search titles, genres, moods…");
         search.setText(query);
         page.addView(search,block(16));
@@ -442,22 +433,9 @@ public class MainActivity extends Activity {
     }
 
     private void showTitleDialog(CatalogItem item) {
-        String[] choices={"▶ Watch trailer","Rate / change rating","Add to Watchlist","Mark Watched","Watching","Dropped","Not Interested","Why this match?"};
-        new AlertDialog.Builder(this)
-            .setTitle(item.title)
-            .setMessage(item.description+"\n\n"+item.type+" • "+item.year+" • "+item.commitment+"\n"+engine.match(item,"")+"% personal match")
-            .setItems(choices,(d,which)->{
-                if(which==0) openTrailer(item.title);
-                else if(which==1) showRatingDialog(item);
-                else if(which==2){store.setStatus(item.title,DataStore.STATUS_WATCHLIST);toast("Saved to Watchlist");}
-                else if(which==3){store.setStatus(item.title,DataStore.STATUS_WATCHED);showRatingDialog(item);}
-                else if(which==4){store.setStatus(item.title,DataStore.STATUS_WATCHING);toast("Marked Watching");}
-                else if(which==5){store.setStatus(item.title,DataStore.STATUS_DROPPED);toast("Marked Dropped");}
-                else if(which==6){store.setStatus(item.title,DataStore.STATUS_NOT_INTERESTED);toast("Recommendations adjusted");}
-                else new AlertDialog.Builder(this).setTitle("Why this match?").setMessage(engine.explain(item)).setPositiveButton("OK",null).show();
-            })
-            .setNegativeButton("Close",null)
-            .show();
+        Intent i=new Intent(this,DetailActivity.class);
+        i.putExtra("title",item.title);
+        startActivity(i);
     }
 
     private void showRatingDialog(CatalogItem item) {
@@ -513,6 +491,15 @@ public class MainActivity extends Activity {
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("application/json");
         startActivityForResult(i,IMPORT_REQUEST);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (page == null || page.getChildCount() == 0) return;
+        if ("home".equals(currentTab)) showHome();
+        else if ("discover".equals(currentTab)) showDiscover("All","");
+        else if ("library".equals(currentTab)) showLibrary(DataStore.STATUS_WATCHLIST);
+        else if ("taste".equals(currentTab)) showTaste();
     }
 
     @Override protected void onActivityResult(int requestCode,int resultCode,Intent data) {
@@ -586,13 +573,23 @@ public class MainActivity extends Activity {
         return t;
     }
 
-    private TextView poster(CatalogItem item,int w,int h) {
-        TextView p=label(initials(item.title),26,Color.WHITE,true);
-        p.setGravity(Gravity.BOTTOM|Gravity.START);
-        p.setPadding(dp(12),dp(12),dp(12),dp(12));
-        p.setBackground(roundRect(posterColor(item.title),18));
-        p.setLayoutParams(new LinearLayout.LayoutParams(dp(w),dp(h)));
-        return p;
+    private FrameLayout poster(CatalogItem item,int w,int h) {
+        FrameLayout box=new FrameLayout(this);
+        box.setBackground(roundRect(PANEL_ALT,18));
+        box.setClipToOutline(true);
+        box.setLayoutParams(new LinearLayout.LayoutParams(dp(w),dp(h)));
+
+        TextView fallback=label(initials(item.title),26,Color.WHITE,true);
+        fallback.setGravity(Gravity.CENTER);
+        fallback.setBackground(roundRect(posterColor(item.title),18));
+        box.addView(fallback,new FrameLayout.LayoutParams(-1,-1));
+
+        ImageView image=new ImageView(this);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        image.setVisibility(View.INVISIBLE);
+        box.addView(image,new FrameLayout.LayoutParams(-1,-1));
+        ArtworkService.loadPoster(this,item,image,fallback);
+        return box;
     }
 
     private EditText input(String hint) {
