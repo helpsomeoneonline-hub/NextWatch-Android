@@ -1,0 +1,11 @@
+<resources>
+    <color name="nw_bg">#0B0D12</color>
+    <color name="nw_panel">#151923</color>
+    <color name="nw_panel_alt">#1C2230</color>
+    <color name="nw_text">#F4F7FB</color>
+    <color name="nw_muted">#9AA5B5</color>
+    <color name="nw_accent">#8B5CF6</color>
+    <color name="nw_accent_2">#22C55E</color>
+    <color name="nw_warning">#F59E0B</color>
+    <color name="nw_danger">#EF4444</color>
+</resources>
